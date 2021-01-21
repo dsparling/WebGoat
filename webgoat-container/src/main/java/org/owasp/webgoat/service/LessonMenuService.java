@@ -26,23 +26,30 @@
  * Source for this application is maintained at
  * https://github.com/WebGoat/WebGoat, a repository for free software projects.
  */
+
 package org.owasp.webgoat.service;
 
 import lombok.AllArgsConstructor;
-import org.owasp.webgoat.lessons.AbstractLesson;
+import org.owasp.webgoat.lessons.Lesson;
+import org.owasp.webgoat.lessons.Assignment;
 import org.owasp.webgoat.lessons.Category;
 import org.owasp.webgoat.lessons.LessonMenuItem;
 import org.owasp.webgoat.lessons.LessonMenuItemType;
 import org.owasp.webgoat.session.Course;
-import org.owasp.webgoat.session.LessonTracker;
-import org.owasp.webgoat.session.UserTracker;
 import org.owasp.webgoat.session.WebSession;
+import org.owasp.webgoat.users.LessonTracker;
+import org.owasp.webgoat.users.UserTracker;
+import org.owasp.webgoat.users.UserTrackerRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>LessonMenuService class.</p>
@@ -54,39 +61,72 @@ import java.util.List;
 @AllArgsConstructor
 public class LessonMenuService {
 
+    public static final String URL_LESSONMENU_MVC = "/service/lessonmenu.mvc";
     private final Course course;
-    private UserTracker userTracker;
+    private final WebSession webSession;
+    private UserTrackerRepository userTrackerRepository;
 
+    @Value("#{'${exclude.categories}'.split(',')}")
+    private List<String> excludeCategories;
+
+    @Value("#{'${exclude.lessons}'.split(',')}")
+    private List<String> excludeLessons;
+    
     /**
      * Returns the lesson menu which is used to build the left nav
      *
      * @return a {@link java.util.List} object.
      */
-    @RequestMapping(path = "/service/lessonmenu.mvc", produces = "application/json")
+    @RequestMapping(path = URL_LESSONMENU_MVC, produces = "application/json")
     public
     @ResponseBody
     List<LessonMenuItem> showLeftNav() {
-        List<LessonMenuItem> menu = new ArrayList<LessonMenuItem>();
+        List<LessonMenuItem> menu = new ArrayList<>();
         List<Category> categories = course.getCategories();
+        UserTracker userTracker = userTrackerRepository.findByUser(webSession.getUserName());
 
         for (Category category : categories) {
+        	if (excludeCategories.contains(category.name())) { 
+        		continue;
+        	}
             LessonMenuItem categoryItem = new LessonMenuItem();
             categoryItem.setName(category.getName());
             categoryItem.setType(LessonMenuItemType.CATEGORY);
             // check for any lessons for this category
-            List<AbstractLesson> lessons = course.getLessons(category);
-            for (AbstractLesson lesson : lessons) {
+            List<Lesson> lessons = course.getLessons(category);
+            lessons = lessons.stream().sorted(Comparator.comparing(l -> l.getTitle())).collect(Collectors.toList());
+            for (Lesson lesson : lessons) {
+            	if (excludeLessons.contains(lesson.getName())) {
+            		continue;
+            	}
                 LessonMenuItem lessonItem = new LessonMenuItem();
                 lessonItem.setName(lesson.getTitle());
                 lessonItem.setLink(lesson.getLink());
                 lessonItem.setType(LessonMenuItemType.LESSON);
                 LessonTracker lessonTracker = userTracker.getLessonTracker(lesson);
-                lessonItem.setComplete(lessonTracker.isLessonSolved());
+                boolean lessonSolved = lessonCompleted(lessonTracker.getLessonOverview(), lesson);
+                lessonItem.setComplete(lessonSolved);
                 categoryItem.addChild(lessonItem);
             }
+            categoryItem.getChildren().sort((o1, o2) -> o1.getRanking() - o2.getRanking());
             menu.add(categoryItem);
         }
         return menu;
 
+    }
+
+    private boolean lessonCompleted(Map<Assignment, Boolean> map, Lesson currentLesson) {
+        boolean result = true;
+        for (Map.Entry<Assignment, Boolean> entry : map.entrySet()) {
+        	    Assignment storedAssignment = entry.getKey();
+            	for (Assignment lessonAssignment: currentLesson.getAssignments()) {
+            		if (lessonAssignment.getName().equals(storedAssignment.getName())) {
+            			result = result && entry.getValue();
+            			break;
+            		}
+            	}
+            
+        }
+        return result;
     }
 }

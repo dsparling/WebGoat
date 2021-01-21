@@ -108,14 +108,17 @@ define(['jquery',
 		},
 
 		onLessonClick: function (elementId) {
-			$('#'+this.curLessonLinkId).removeClass('selected');
+			if (this.curLessonLinkId) {
+				$('#'+this.curLessonLinkId).removeClass('selected').parent().removeClass('selected');
+			}
 			//update
-			$('#'+elementId).addClass('selected');
+			$('#'+elementId).addClass('selected').parent().addClass('selected');
 			this.curLessonLinkId = elementId;
 		},
 
 		expandCategory: function (id) {
 			if (id) {
+			    //this.selectedCategory = id;
 				this.accordionMenu(id);
 			}
 		},

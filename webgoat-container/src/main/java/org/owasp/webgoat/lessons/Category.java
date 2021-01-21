@@ -36,27 +36,40 @@ import lombok.Getter;
  */
 public enum Category {
 
-    INTRODUCTION("Introduction", new Integer(5)),
-    GENERAL("General", new Integer(100)),
-    ACCESS_CONTROL("Access Control Flaws", new Integer(200)),
-    AJAX_SECURITY("AJAX Security", new Integer(400)),
-    AUTHENTICATION("Authentication Flaws", new Integer(500)),
-    BUFFER_OVERFLOW("Buffer Overflows", new Integer(600)),
-    CODE_QUALITY("Code Quality", new Integer(700)),
-    CONCURRENCY("Concurrency", new Integer(800)),
-    XSS("Cross-Site Scripting (XSS)", new Integer(900)),
-    ERROR_HANDLING("Improper Error Handling", new Integer(1000)),
-    INJECTION("Injection Flaws", new Integer(1100)),
-    DOS("Denial of Service", new Integer(1200)),
-    INSECURE_COMMUNICATION("Insecure Communication", new Integer(1300)),
-    INSECURE_CONFIGURATION("Insecure Configuration", new Integer(1400)),
-    INSECURE_STORAGE("Insecure Storage", new Integer(1500)),
-    MALICIOUS_EXECUTION("Malicious Execution", new Integer(1600)),
-    PARAMETER_TAMPERING("Parameter Tampering", new Integer(1700)),
-    SESSION_MANAGEMENT("Session Management Flaws", new Integer(1800)),
-    WEB_SERVICES("Web Services", new Integer(1900)),
-    ADMIN_FUNCTIONS("Admin Functions", new Integer(2000)),
-    CHALLENGE("Challenge", new Integer(3000));
+    INTRODUCTION("Introduction", 5),
+    GENERAL("General", 100),
+    
+    INJECTION("(A1) Injection", 300),
+    AUTHENTICATION("(A2) Broken Authentication", 302),
+    INSECURE_COMMUNICATION("(A3) Sensitive Data Exposure", 303),
+    XXE("(A4) XML External Entities (XXE)", 304),
+    ACCESS_CONTROL("(A5) Broken Access Control", 305),
+    
+    XSS("(A7) Cross-Site Scripting (XSS)", 307),
+    INSECURE_DESERIALIZATION("(A8) Insecure Deserialization", 308),
+    VULNERABLE_COMPONENTS("(A9) Vulnerable Components", 309),
+    
+    REQUEST_FORGERIES("(A8:2013) Request Forgeries", 318),
+
+    
+    REQ_FORGERIES("Request Forgeries", 450),
+    
+    INSECURE_CONFIGURATION("Insecure Configuration", 600),
+    INSECURE_STORAGE("Insecure Storage", 800),
+    
+    
+    AJAX_SECURITY("AJAX Security", 1000),
+    BUFFER_OVERFLOW("Buffer Overflows", 1100),
+    CODE_QUALITY("Code Quality", 1200),
+    CONCURRENCY("Concurrency", 1300),
+    ERROR_HANDLING("Improper Error Handling", 1400),
+    DOS("Denial of Service", 1500),
+    MALICIOUS_EXECUTION("Malicious Execution", 1600),
+    CLIENT_SIDE("Client side", 1700),
+    SESSION_MANAGEMENT("Session Management Flaws", 1800),
+    WEB_SERVICES("Web Services", 1900),
+    ADMIN_FUNCTIONS("Admin Functions", 2000),
+    CHALLENGE("Challenges", 3000);
 
     @Getter
     private String name;

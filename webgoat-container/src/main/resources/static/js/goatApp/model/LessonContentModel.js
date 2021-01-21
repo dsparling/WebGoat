@@ -20,7 +20,6 @@ define(['jquery',
 
         loadData: function(options) {
             this.urlRoot = _.escape(encodeURIComponent(options.name)) + '.lesson'
-
             var self = this;
             this.fetch().done(function(data) {
                 self.setContent(data);
@@ -32,7 +31,12 @@ define(['jquery',
                 loadHelps = true;
             }
             this.set('content',content);
-            this.set('lessonUrl',document.URL);
+            this.set('lessonUrl',document.URL.replace(/\.lesson.*/,'.lesson'));
+            if (/.*\.lesson\/(\d{1,4})$/.test(document.URL)) {
+                this.set('pageNum',document.URL.replace(/.*\.lesson\/(\d{1,4})$/,'$1'));
+            } else {
+                this.set('pageNum',0);
+            }
             this.trigger('content:loaded',this,loadHelps);
         },
 

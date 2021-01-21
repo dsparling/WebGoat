@@ -1,6 +1,6 @@
 
 /**
- *************************************************************************************************
+ * ************************************************************************************************
  * This file is part of WebGoat, an Open Web Application Security Project utility. For details,
  * please see http://www.owasp.org/
  * <p>
@@ -25,96 +25,101 @@
  * <p>
  *
  * @author WebGoat
- * @since  December 12, 2015
  * @version $Id: $Id
+ * @since December 12, 2015
  */
+
 package org.owasp.webgoat;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import lombok.extern.slf4j.Slf4j;
 import org.asciidoctor.Asciidoctor;
-import org.thymeleaf.TemplateProcessingParameters;
-import org.thymeleaf.resourceresolver.IResourceResolver;
-import org.thymeleaf.templateresolver.TemplateResolver;
+import org.asciidoctor.extension.JavaExtensionRegistry;
+import org.owasp.webgoat.asciidoc.*;
+import org.owasp.webgoat.i18n.Language;
+import org.thymeleaf.IEngineConfiguration;
+import org.thymeleaf.templateresolver.FileTemplateResolver;
+import org.thymeleaf.templateresource.ITemplateResource;
+import org.thymeleaf.templateresource.StringTemplateResource;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 
 import static org.asciidoctor.Asciidoctor.Factory.create;
 
 /**
  * Thymeleaf resolver for AsciiDoc used in the lesson, can be used as follows inside a lesson file:
- *
+ * <p>
  * <code>
- *   <div th:replace="doc:AccessControlMatrix_plan.adoc"></div>
+ * <div th:replace="doc:AccessControlMatrix_plan.adoc"></div>
  * </code>
  */
-public class AsciiDoctorTemplateResolver extends TemplateResolver {
+@Slf4j
+public class AsciiDoctorTemplateResolver extends FileTemplateResolver {
 
     private static final Asciidoctor asciidoctor = create();
     private static final String PREFIX = "doc:";
-    private final File pluginTargetDirectory;
+    private final Language language;
 
-    public AsciiDoctorTemplateResolver(File pluginTargetDirectory) {
-        this.pluginTargetDirectory = pluginTargetDirectory;
-        setResourceResolver(new AdocResourceResolver());
-        setResolvablePatterns(Sets.newHashSet(PREFIX + "*"));
+    public AsciiDoctorTemplateResolver(Language language) {
+        this.language = language;
+        setResolvablePatterns(Set.of(PREFIX + "*"));
     }
 
     @Override
-    protected String computeResourceName(TemplateProcessingParameters params) {
-        String templateName = params.getTemplateName();
-        return templateName.substring(PREFIX.length());
+    protected ITemplateResource computeTemplateResource(IEngineConfiguration configuration, String ownerTemplate, String template, String resourceName, String characterEncoding, Map<String, Object> templateResolutionAttributes) {
+        var templateName = resourceName.substring(PREFIX.length());
+        try (InputStream is = readInputStreamOrFallbackToEnglish(templateName, language)) {
+            if (is == null) {
+                log.warn("Resource name: {} not found, did you add the adoc file?", templateName);
+                return new StringTemplateResource("");
+            } else {
+                JavaExtensionRegistry extensionRegistry = asciidoctor.javaExtensionRegistry();
+                extensionRegistry.inlineMacro("webWolfLink", WebWolfMacro.class);
+                extensionRegistry.inlineMacro("webWolfRootLink", WebWolfRootMacro.class);
+                extensionRegistry.inlineMacro("webGoatVersion", WebGoatVersionMacro.class);
+                extensionRegistry.inlineMacro("webGoatTempDir", WebGoatTmpDirMacro.class);
+                extensionRegistry.inlineMacro("operatingSystem", OperatingSystemMacro.class);
+
+                StringWriter writer = new StringWriter();
+                asciidoctor.convert(new InputStreamReader(is), writer, createAttributes());
+                return new StringTemplateResource(writer.getBuffer().toString());
+            }
+        } catch (IOException e) {
+            //no html yet
+            return new StringTemplateResource("");
+        }
     }
 
-    private class AdocResourceResolver implements IResourceResolver {
+    /**
+     * The resource name is for example HttpBasics_content1.adoc. This is always located in the following directory:
+     * <code>plugin/HttpBasics/lessonPlans/en/HttpBasics_content1.adoc</code>
+     */
+    private String computeResourceName(String resourceName, String language) {
+        return String.format("lessonPlans/%s/%s", language, resourceName);
+    }
 
-        @Override
-        public InputStream getResourceAsStream(TemplateProcessingParameters params, String resourceName) {
-            try {
-                Optional<Path> adocFile = find(pluginTargetDirectory.toPath(), resourceName);
-                if (adocFile.isPresent()) {
-                    try (FileReader reader = new FileReader(adocFile.get().toFile())) {
-                        StringWriter writer = new StringWriter();
-                        asciidoctor.convert(reader, writer, createAttributes());
-                        return new ByteArrayInputStream(writer.getBuffer().toString().getBytes());
-                    }
-                }
-                return new ByteArrayInputStream(new byte[0]);
-            } catch (IOException e) {
-                //no html yet
-                return new ByteArrayInputStream(new byte[0]);
-            }
+    private InputStream readInputStreamOrFallbackToEnglish(String resourceName, Language language) {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(computeResourceName(resourceName, language.getLocale().getLanguage()));
+        if (is == null) {
+            is = Thread.currentThread().getContextClassLoader().getResourceAsStream(computeResourceName(resourceName, "en"));
         }
+        return is;
+    }
 
-        private Map<String, Object> createAttributes() {
-            Map<String, Object> attributes = Maps.newHashMap();
-            attributes.put("source-highlighter", "coderay");
-            attributes.put("backend", "xhtml");
+    private Map<String, Object> createAttributes() {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("source-highlighter", "coderay");
+        attributes.put("backend", "xhtml");
+        attributes.put("icons", org.asciidoctor.Attributes.FONT_ICONS);
 
-            Map<String, Object> options = Maps.newHashMap();
-            options.put("attributes", attributes);
+        Map<String, Object> options = new HashMap<>();
+        options.put("attributes", attributes);
 
-            return options;
-        }
-
-        private Optional<Path> find(Path path, String resourceName) throws IOException {
-            return Files.walk(path)
-                    .filter(Files::isRegularFile)
-                    .filter(p -> p.toString().endsWith(resourceName)).findFirst();
-        }
-
-        @Override
-        public String getName() {
-            return "adocResourceResolver";
-        }
+        return options;
     }
 }

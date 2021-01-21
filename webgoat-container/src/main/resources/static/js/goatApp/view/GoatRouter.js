@@ -1,22 +1,28 @@
+/*
+ * Define the libraries that are used by the GoatRouter script. All define '' names should refer to the
+ * names in the main.js require.config paths name parts.
+ * The names of the function arguments is used as the object returned from loading the specified framework.
+ */
+
 define(['jquery',
-    'libs/jquery-vuln',
+	'libs/jquery-vuln',
+	'jqueryuivuln',
     'underscore',
     'backbone',
     'goatApp/controller/LessonController',
     'goatApp/controller/MenuController',
     'goatApp/view/LessonContentView',
     'goatApp/view/MenuView',
-    'goatApp/view/DeveloperControlsView',
     'goatApp/view/TitleView'
 ], function ($,
              $vuln,
+             jqueryui,
              _,
              Backbone,
              LessonController,
              MenuController,
              LessonContentView,
              MenuView,
-             DeveloperControlsView,
              TitleView) {
 
     function getContentElement() {
@@ -24,16 +30,19 @@ define(['jquery',
     };
 
     function render(view) {
-        $('div.pages').hide();
+    	$('div.pages').hide();
         //TODO this works for now because we only have one page we should rewrite this a bit
         if (view != null) {
-            $('#report-card-page').show();
+        	$('#report-card-page').show();
         } else {
-            $('#lesson-title').show();
-            $('#lesson-page').show();
+        	$('#lesson-title').show();
+        	$('#lesson-page').show();
         }
     };
 
+    /*
+     * Definition of Goat App Router.
+     */
     var GoatAppRouter = Backbone.Router.extend({
 
          routes: {
@@ -52,24 +61,31 @@ define(['jquery',
             webgoat.customjs.jquery = $; //passing jquery into custom js scope ... still klunky, but works for now
             webgoat.customjs.jqueryVuln = $vuln;
 
-            // temporary shim to support dom-xss lesson
+            // shim to support xss lesson
             webgoat.customjs.phoneHome = function (e) {
                 console.log('phoneHome invoked');
-                console.log(arguments.callee);
-                //
                 webgoat.customjs.jquery.ajax({
                     method: "POST",
-                    url: "/WebGoat/CrossSiteScripting/dom-xss",
+                    url: "/WebGoat/CrossSiteScripting/phone-home-xss",
                     data: {param1: 42, param2: 24},
                     headers: {
                         "webgoat-requested-by": "dom-xss-vuln"
                     },
-                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
+                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                    success: function (data) {
+                        //devs leave stuff like this in all the time
+                        console.log('phone home said '  + JSON.stringify(data));
+                    }
                 });
             }
+
         },
 
+        /* 
+         * Constructor of Goat App Router invoked by goatApp.js new Router().
+         */
         initialize: function () {
+        	console.log('initialize goat app router');
             this.menuController = new MenuController({menuView: new MenuView()});
             this.titleView = new TitleView();
             this.lessonController = new LessonController({lessonContentView: new LessonContentView(), titleView: this.titleView}),
@@ -93,6 +109,11 @@ define(['jquery',
             pageNum = (_.isNumber(parseInt(pageNum))) ? parseInt(pageNum) : 0;
             this.lessonController.loadLesson(name, pageNum);
             this.menuController.updateMenu(name);
+        },
+
+        testRoute: function (param) {
+            this.lessonController.testHandler(param);
+            //this.menuController.updateMenu(name);
         },
 
         welcomeRoute: function () {

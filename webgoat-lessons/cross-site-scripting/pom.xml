@@ -6,8 +6,16 @@
     <parent>
         <groupId>org.owasp.webgoat.lesson</groupId>
         <artifactId>webgoat-lessons-parent</artifactId>
-        <version>8.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
+    <dependencies>
+        <dependency>
+            <!-- jsoup HTML parser library @ https://jsoup.org/ -->
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.11.3</version>
+        </dependency>
+    </dependencies>
     <build>
        <plugins>
            <plugin>
@@ -24,7 +32,7 @@
                        </goals>
                        <configuration>
                            <backend>html</backend>
-                           <sourceDirectory>src/main/resources/plugin/CrossSiteScripting/lessonPlans/en/</sourceDirectory>
+                           <sourceDirectory>src/main/resources/lessonPlans/en/</sourceDirectory>
                        </configuration>
                    </execution>
 

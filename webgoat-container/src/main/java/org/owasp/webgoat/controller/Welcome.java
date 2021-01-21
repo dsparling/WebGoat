@@ -28,6 +28,7 @@
  * @since October 28, 2003
  * @version $Id: $Id
  */
+
 package org.owasp.webgoat.controller;
 
 import org.springframework.stereotype.Controller;
@@ -55,7 +56,7 @@ public class Welcome {
      * @param request a {@link javax.servlet.http.HttpServletRequest} object.
      * @return a {@link org.springframework.web.servlet.ModelAndView} object.
      */
-    @RequestMapping(path = "welcome.mvc", method = RequestMethod.GET)
+    @RequestMapping(path = {"welcome.mvc", "/"}, method = RequestMethod.GET)
     public ModelAndView welcome(HttpServletRequest request) {
 
         // set the welcome attribute

@@ -22,15 +22,12 @@
  * projects.
  * <p>
  */
+
 package org.owasp.webgoat.i18n;
 
 import lombok.AllArgsConstructor;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.LocaleResolver;
 
-import java.util.Locale;
 import java.util.Properties;
 
 /**
@@ -42,26 +39,22 @@ import java.util.Properties;
 @AllArgsConstructor
 public class Messages extends ReloadableResourceBundleMessageSource {
 
-    private final LocaleResolver localeResolver;
+    private final Language language;
 
     /**
      * Gets all messages for presented Locale.
+     *
      * @return all messages
      */
     public Properties getMessages() {
-        return getMergedProperties(resolveLocale()).getProperties();
+        return getMergedProperties(language.getLocale()).getProperties();
     }
 
     public String getMessage(String code, Object... args) {
-        return getMessage(code, args, resolveLocale());
+        return getMessage(code, args, language.getLocale());
     }
 
     public String getMessage(String code, String defaultValue, Object... args) {
-        return super.getMessage(code, args, defaultValue, resolveLocale());
+        return super.getMessage(code, args, defaultValue, language.getLocale());
     }
-
-    protected Locale resolveLocale() {
-        return localeResolver.resolveLocale(((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest());
-    }
-
 }

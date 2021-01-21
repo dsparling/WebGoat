@@ -1,11 +1,9 @@
 package org.owasp.webgoat.lessons;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
-import java.io.Serializable;
+import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,15 +35,45 @@ import java.util.List;
  * @version $Id: $Id
  * @since November 25, 2016
  */
-@AllArgsConstructor
-@RequiredArgsConstructor
 @Getter
-public class Assignment implements Serializable {
+@EqualsAndHashCode
+@Entity
+public class Assignment {
 
-    @NonNull
-    private final String name;
-    @NonNull
-    private final String path;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String name;
+    private String path;
+
+    @Transient
     private List<String> hints;
 
+    private Assignment() {
+        //Hibernate
+    }
+
+    public Assignment(String name) {
+        this(name, name, new ArrayList<>());
+    }
+
+    public Assignment(String name, String path, List<String> hints) {
+        if (path.equals("") || path.equals("/") || path.equals("/WebGoat/")) {
+            throw new IllegalStateException("The path of assignment '" + name + "' overrides WebGoat endpoints, please choose a path within the scope of the lesson");
+        }
+        this.name = name;
+        this.path = path;
+        this.hints = hints;
+    }
+
+    /**
+     * Set path is here to overwrite stored paths.
+     * Since a stored path can no longer be used in a lesson while
+     * the lesson (name) itself is still part of the lesson.
+     *
+     * @param pathName the path
+     */
+    public void setPath(String pathName) {
+        this.path = pathName;
+    }
 }

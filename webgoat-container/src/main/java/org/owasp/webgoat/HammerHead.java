@@ -1,10 +1,15 @@
 package org.owasp.webgoat;
 
+import lombok.AllArgsConstructor;
 import org.owasp.webgoat.session.Course;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * *************************************************************************************************
@@ -41,19 +46,16 @@ import org.springframework.web.servlet.ModelAndView;
  * @since October 28, 2003
  */
 @Controller
+@AllArgsConstructor
 public class HammerHead {
 
     private final Course course;
-
-    public HammerHead(Course course) {
-        this.course = course;
-    }
 
     /**
      * Entry point for WebGoat, redirects to the first lesson found within the course.
      */
     @RequestMapping(path = "/attack", method = {RequestMethod.GET, RequestMethod.POST})
-    public ModelAndView attack() {
+    public ModelAndView attack(Authentication authentication, HttpServletRequest request, HttpServletResponse response) {
         return new ModelAndView("redirect:" + "start.mvc" + course.getFirstLesson().getLink());
     }
 }
